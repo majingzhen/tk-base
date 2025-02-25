@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>后台管理系统 - 登录</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="__STATIC__/layui/css/layui.css">
+    <style>
+        .login-wrap {
+            height: 100vh;
+            background: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            width: 375px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .login-title {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .captcha-img {
+            height: 38px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrap">
+        <div class="login-container">
+            <h2 class="login-title">后台管理系统</h2>
+            <form class="layui-form" action="">
+                <div class="layui-form-item">
+                    <div class="layui-input-block" style="margin-left: 0;">
+                        <input type="text" name="username" required lay-verify="required" placeholder="请输入用户名"
+                            class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block" style="margin-left: 0;">
+                        <input type="password" name="password" required lay-verify="required" placeholder="请输入密码" 
+                            class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block" style="margin-left: 0;">
+                        <div class="layui-row">
+                            <div class="layui-col-xs7">
+                                <input type="text" name="captcha" required lay-verify="required" placeholder="请输入验证码" 
+                                    class="layui-input">
+                            </div>
+                            <div class="layui-col-xs5">
+                                <img src="{:captcha_src()}" alt="captcha" class="captcha-img" id="captcha">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block" style="margin-left: 0;">
+                        <button class="layui-btn layui-btn-fluid" lay-submit lay-filter="loginForm">登录</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="__STATIC__/layui/layui.js"></script>
+    <script>
+    layui.use(['form', 'layer'], function(){
+        var form = layui.form;
+        var layer = layui.layer;
+        
+        // 验证码点击刷新
+        document.getElementById('captcha').onclick = function() {
+            this.src = '{:captcha_src()}?t=' + Math.random();
+        };
+        
+        // 监听提交
+        form.on('submit(loginForm)', function(data){
+            var loading = layer.load(2);
+            
+            // 发送登录请求
+            fetch('{:url("login/check")}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data.field)
+            })
+            .then(response => response.json())
+            .then(res => {
+                layer.close(loading);
+                if(res.code === 1){
+                    layer.msg('登录成功', {
+                        icon: 1,
+                        time: 1000
+                    }, function(){
+                        window.location.href = '{:url("index/index")}';
+                    });
+                }else{
+                    layer.msg(res.msg, {icon: 2});
+                    // 刷新验证码
+                    document.getElementById('captcha').click();
+                }
+            })
+            .catch(err => {
+                layer.close(loading);
+                layer.msg('服务器错误', {icon: 2});
+            });
+            
+            return false;
+        });
+    });
+    </script>
+</body>
+</html>

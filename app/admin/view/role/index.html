@@ -19,14 +19,17 @@
                     <div class="layui-input-inline">
                         <input type="text" name="name" placeholder="角色名称" class="layui-input">
                     </div>
+                    <div class="layui-input-inline">
+                        <input type="text" name="code" placeholder="角色编码" class="layui-input">
+                    </div>
                 </div>
                 <div class="layui-inline">
                     <button type="button" class="layui-btn" lay-submit lay-filter="searchSubmit">搜索</button>
                     <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    <button type="button" class="layui-btn" lay-event="add" onclick="return openAdd()">
+                        <i class="layui-icon">&#xe654;</i> 添加
+                    </button>
                 </div>
-                <button type="button" class="layui-btn layui-btn-sm" lay-event="add" onclick="return openAdd()">
-                    <i class="layui-icon">&#xe654;</i> 添加
-                </button>
             </div>
         </form>
 
@@ -61,7 +64,7 @@
         <div class="layui-form-item">
             <label class="layui-form-label">描述</label>
             <div class="layui-input-block">
-                <textarea name="remark" placeholder="请输入描述" class="layui-textarea"></textarea>
+                <textarea name="description" placeholder="请输入描述" class="layui-textarea"></textarea>
             </div>
         </div>
         <div class="layui-form-item">
@@ -80,6 +83,7 @@
     </form>
 </script>
 
+<script src="__STATIC__/jquery/jquery.min.js"></script>
 <script src="__STATIC__/layui/layui.js"></script>
 <script>
     layui.use(['table', 'form', 'layer'], function(){
@@ -90,7 +94,7 @@
         // 初始化表格
         table.render({
             elem: '#roleTable'
-            ,url: '/admin/role/list'
+            ,url: '/admin/role/page'
             ,page: true
             ,limits:[10, 20, 30, 50, 100]
             ,response: {
@@ -100,7 +104,7 @@
                 {field: 'id', title: 'ID', width: 80, sort: true}
                 ,{field: 'name', title: '角色名称', width: 150}
                 ,{field: 'code', title: '角色标识', width: 150}
-                ,{field: 'remark', title: '描述'}
+                ,{field: 'description', title: '描述'}
                 ,{field: 'status', title: '状态', width: 100, templet: function(d){
                         return d.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' :
                             '<span class="layui-badge layui-bg-gray">禁用</span>';

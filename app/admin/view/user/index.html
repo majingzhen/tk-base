@@ -91,6 +91,13 @@
                 </div>
             </div>
             <div class="layui-form-item">
+                <label class="layui-form-label">角色</label>
+                <div class="layui-input-block">
+                    <div name="role_ids" xm-select="roleSelect">
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
                 <div class="layui-input-block">
                     <button class="layui-btn" lay-submit lay-filter="editSubmit">保存</button>
                     <button type="reset" class="layui-btn layui-btn-primary">重置</button>
@@ -101,6 +108,7 @@
 
     <script src="__STATIC__/jquery/jquery.min.js"></script>
     <script src="__STATIC__/layui/layui.js"></script>
+    <script src="__STATIC__/xm-select/xm-select.js"></script>
     <script>
     layui.use(['table', 'form', 'layer', 'upload'], function(){
         var table = layui.table;
@@ -111,7 +119,7 @@
         // 初始化表格
         table.render({
             elem: '#userTable'
-            ,url: '/admin/user/list'
+            ,url: '/admin/user/page'
             ,page: true
             ,limits:[10, 20, 30, 50,  100]
             ,response: {
@@ -165,9 +173,13 @@
             return false;
         });
 
-        // 监听表单提交
+        // 修改表单提交处理
         form.on('submit(editSubmit)', function(data){
             var loading = layer.load();
+            // 获取选中的角色 ID
+            var roleIds = window.roleSelect.getValue('valueStr');
+            data.field.role_ids = roleIds;
+
             $.post('/admin/user/save', data.field, function(res){
                 layer.close(loading);
                 if(res.code === 1){
@@ -180,6 +192,47 @@
             });
             return false;
         });
+
+        // 定义角色选择器初始化函数
+        function initRoleSelect(selected) {
+            // 先创建实例
+            window.roleSelect = xmSelect.render({
+                el: '[xm-select="roleSelect"]',
+                name: 'role_ids',
+                data: [],  // 初始化时置空
+                language: 'zn',
+                layVerify: 'required',
+                layVerType: 'msg',
+                layReqText: '请选择角色',
+                prop: {
+                    name: 'name',
+                    value: 'id'
+                },
+                theme: {
+                    color: '#009688',
+                }
+            });
+
+            // 加载角色数据
+            $.get('/admin/role/list', function(res) {
+                if (res.code === 1) {
+                    console.log('角色数据:', res.data); // 调试用
+                    
+                    // 更新数据
+                    window.roleSelect.update({
+                        data: res.data
+                    });
+
+                    // 如果是编辑模式且有选中值
+                    if (selected && selected.length > 0) {
+                        console.log('选中值:', selected); // 调试用
+                        window.roleSelect.setValue(selected);
+                    }
+                } else {
+                    layer.msg('获取角色列表失败');
+                }
+            });
+        }
 
         // 定义上传组件配置
         function initUpload(elem) {
@@ -216,7 +269,6 @@
                 }
             });
         }
-
         // 修改 openAdd 函数
         window.openAdd = function(){
             layer.open({
@@ -226,8 +278,8 @@
                 area: ['500px', '600px'],
                 success: function(){
                     form.render();
-                    // 重新初始化上传组件
                     initUpload('#uploadAvatar');
+                    initRoleSelect(); // 初始化角色选择器
                 }
             });
         }
@@ -240,16 +292,24 @@
                 content: $('#editForm').html(),
                 area: ['500px', '600px'],
                 success: function(){
-                    // 将密码置空
                     data.password = "";
                     form.val('editForm', data);
-                    // 设置头像预览
                     if(data.avatar){
                         $('#avatarPreview').attr('src', data.avatar);
                     }
                     form.render();
-                    // 重新初始化上传组件
                     initUpload('#uploadAvatar');
+
+                    // 获取用户角色并设置选中
+                    $.get('/admin/user/roles', { id: data.id }, function(res) {
+                        if (res.code === 1) {
+                            console.log('用户角色数据:', res.data); // 调试用
+                            initRoleSelect(res.data);
+                        } else {
+                            layer.msg('获取用户角色失败');
+                            initRoleSelect(); // 仍然初始化选择器，但不设置选中值
+                        }
+                    });
                 }
             });
         }

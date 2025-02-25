@@ -15,22 +15,35 @@ Route::group('', function () {
     Route::get('index', 'index/welcome');
     Route::get('welcome', 'index/welcome');
 
-
     // 系统相关路由
     Route::get('getLoginUser', 'system/getLoginUser');
     Route::get('getMenu', 'system/getMenu');
-
-    // 用户相关
-    Route::group('user', function () {
-        Route::get('/', 'user/index');
-        Route::get('list', 'user/list');
-        Route::post('save', 'user/save');
-    });
 
     // 上传文件
     Route::group('upload', function () {
         Route::post('/', 'upload/upload');
     });
+
+    // 用户相关
+    Route::group('user', function () {
+        Route::get('/', 'user/index');
+        Route::get('page', 'user/page');
+        Route::post('save', 'user/save');
+        Route::post('delete', 'user/delete');
+        Route::get('roles', 'user/roles');
+    });
+
+    // 角色相关
+    Route::group('role', function () {
+        Route::get('/', 'role/index');
+        Route::get('list', 'role/list');
+        Route::get('page', 'role/page');
+        Route::post('save', 'role/save');
+        Route::post('delete', 'role/delete');
+    });
+
+
+
 })->middleware(\app\admin\middleware\CheckLogin::class);
 
 

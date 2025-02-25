@@ -3,6 +3,7 @@
 namespace app\admin\controller;
 
 use app\admin\model\SysRole;
+use app\admin\model\SysUser;
 use app\BaseController;
 use app\common\JsonResponse;
 use think\facade\Db;
@@ -18,17 +19,29 @@ class Role extends BaseController
     }
 
     /**
+     * 获取全部数据
+     */
+    public function list() {
+        $roles = SysRole::select();
+        return JsonResponse::success($roles);
+    }
+
+    /**
      * 获取角色列表
      */
-    public function list()
+    public function page()
     {
         $page = input('page', 1);
         $limit = input('limit', 10);
         $name = input('name', '');
+        $code = input('code', '');
 
         $where = [];
         if ($name) {
             $where[] = ['name', 'like', "%{$name}%"];
+        }
+        if ($code) {
+            $where[] = ['code', 'like', "%{$code}%"];
         }
 
         $count = SysRole::where($where)->count();
@@ -37,10 +50,7 @@ class Role extends BaseController
             ->order('id', 'desc')
             ->select();
 
-        return JsonResponse::success([
-            'count' => $count,
-            'list' => $list
-        ]);
+        return JsonResponse::paginate($list, $count);
     }
 
     /**

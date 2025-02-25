@@ -5,6 +5,7 @@ namespace app\admin\controller;
 use app\admin\model\SysUser;
 use app\BaseController;
 use app\common\JsonResponse;
+use think\facade\Db;
 use think\facade\Request;
 
 class User extends BaseController
@@ -17,7 +18,7 @@ class User extends BaseController
     /**
      * 用户列表
      */
-    public function list()
+    public function page()
     {
         $page = (int)Request::param('page', 1);
         $limit = (int)Request::param('limit', 10);
@@ -43,7 +44,7 @@ class User extends BaseController
     public function save()
     {
         $data = Request::post();
-        
+        Db::startTrans();
         try {
             if (isset($data['id']) && $data['id']) {
                 $user = SysUser::find($data['id']);
@@ -57,7 +58,11 @@ class User extends BaseController
                 } else {
                     $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 }
-                
+                $roleIds = explode(',', $data['role_ids']);
+                if (!empty($roleIds)) {
+                    $user->roles()->detach();
+                    $user->roles()->saveAll($roleIds);
+                }
                 $user->save($data);
             } else {
                 if (empty($data['password'])) {
@@ -68,12 +73,19 @@ class User extends BaseController
                 if ($exists) {
                     return JsonResponse::error('用户名已存在');
                 }
+
                 
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-                SysUser::create($data);
+                $user = SysUser::create($data);
+                $roleIds = explode(',', $data['role_ids']);
+                if (!empty($roleIds)) {
+                    $user->roles()->saveAll($roleIds);
+                }
             }
+            Db::commit();
             return JsonResponse::success();
         } catch (\Exception $e) {
+            Db::rollback();
             return JsonResponse::error('保存失败：' . $e->getMessage());
         }
     }
@@ -94,5 +106,14 @@ class User extends BaseController
         } catch (\Exception $e) {
             return JsonResponse::error('删除失败：' . $e->getMessage());
         }
+    }
+
+    /**
+     * 获取用户角色
+     */
+    public function roles() {
+        $userId = input('id');
+        $user = SysUser::with(['roles'])->find($userId);
+        return JsonResponse::success($user->roles);
     }
 }

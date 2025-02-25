@@ -31,6 +31,13 @@ class Login extends BaseController
         if (!$user || !password_verify($data['password'], $user->password)) {
             return JsonResponse::error('账号或密码错误');
         }
+        if ($user->status != 1) {
+            return JsonResponse::error('账号已被禁用');
+        }
+        // 保存登录时间
+        $user->login_time = date('Y-m-d H:i:s');
+        $user->login_ip = request()->ip();
+        $user->save();
         session("admin_id", $user->id);
         session("admin_user", $user);
         return JsonResponse::success();

@@ -24,7 +24,12 @@ Route::group('', function () {
     Route::group('user', function () {
         Route::get('/', 'user/index');
         Route::get('list', 'user/list');
-        Route::get('save', 'user/save');
+        Route::post('save', 'user/save');
+    });
+
+    // 上传文件
+    Route::group('upload', function () {
+        Route::post('/', 'upload/upload');
     });
 })->middleware(\app\admin\middleware\CheckLogin::class);
 

@@ -5,14 +5,12 @@
     <title>用户管理</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="__STATIC__/layui/css/layui.css">
+    <link rel="stylesheet" href="__STATIC__/css/upload.css">
 </head>
 <body>
     <div class="layui-card">
         <div class="layui-card-header">
             <span>用户管理</span>
-            <button class="layui-btn layui-btn-sm" lay-event="add" onclick="openAdd()">
-                <i class="layui-icon">&#xe654;</i> 添加
-            </button>
         </div>
         <div class="layui-card-body">
             <!-- 搜索表单 -->
@@ -27,6 +25,9 @@
                         <button type="button" class="layui-btn" lay-submit lay-filter="searchSubmit">搜索</button>
                         <button type="reset" class="layui-btn layui-btn-primary">重置</button>
                     </div>
+                    <button type="button" class="layui-btn layui-btn-sm" lay-event="add" onclick="return openAdd()">
+                        <i class="layui-icon">&#xe654;</i> 添加
+                    </button>
                 </div>
             </form>
             
@@ -58,6 +59,31 @@
                 </div>
             </div>
             <div class="layui-form-item">
+                <label class="layui-form-label">昵称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="nickname" placeholder="请输入昵称" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">头像</label>
+                <div class="layui-input-block">
+                    <input type="hidden" name="avatar">
+                    <div class="upload-container">
+                        <div class="upload-preview" id="uploadAvatar">
+                            <img src="" id="avatarPreview">
+                            <div class="upload-cover">点击更换</div>
+                            <div class="upload-progress"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">邮箱</label>
+                <div class="layui-input-block">
+                    <input type="text" name="email" placeholder="请输入邮箱" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
                 <label class="layui-form-label">状态</label>
                 <div class="layui-input-block">
                     <input type="radio" name="status" value="1" title="启用" checked>
@@ -76,10 +102,11 @@
     <script src="__STATIC__/jquery/jquery.min.js"></script>
     <script src="__STATIC__/layui/layui.js"></script>
     <script>
-    layui.use(['table', 'form', 'layer'], function(){
+    layui.use(['table', 'form', 'layer', 'upload'], function(){
         var table = layui.table;
         var form = layui.form;
         var layer = layui.layer;
+        var upload = layui.upload;
         
         // 初始化表格
         table.render({
@@ -102,8 +129,8 @@
                     return d.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : 
                         '<span class="layui-badge layui-bg-gray">禁用</span>';
                 }}
-                ,{field: 'last_login_time', title: '最后登录时间', width: 180}
-                ,{field: 'last_login_ip', title: '最后登录IP', width: 150}
+                ,{field: 'login_time', title: '最后登录时间', width: 180}
+                ,{field: 'login_ip', title: '最后登录IP', width: 150}
                 ,{field: 'create_time', title: '创建时间', width: 180}
                 ,{title: '操作', width: 150, toolbar: '#tableBar', fixed: 'right'}
             ]]
@@ -153,32 +180,80 @@
             });
             return false;
         });
+
+        // 定义上传组件配置
+        function initUpload(elem) {
+            upload.render({
+                elem: elem
+                ,url: '/admin/upload'
+                ,accept: 'images'
+                ,acceptMime: 'image/*'
+                ,size: 2048
+                ,before: function(obj){
+                    obj.preview(function(index, file, result){
+                        $(elem).find('img').attr('src', result);
+                    });
+                    $(elem).find('.upload-progress').show();
+                }
+                ,progress: function(n){
+                    var percent = n + '%';
+                    $(elem).find('.upload-progress').css('width', percent);
+                }
+                ,done: function(res){
+                    if(res.code === 1){
+                        $(elem).closest('.layui-form-item').find('input[name=avatar]').val(res.data);
+                        layer.msg('上传成功');
+                    }else{
+                        layer.msg(res.msg);
+                        $(elem).find('img').attr('src', '');
+                    }
+                    $(elem).find('.upload-progress').hide().css('width', '0%');
+                }
+                ,error: function(){
+                    layer.msg('上传失败');
+                    $(elem).find('img').attr('src', '');
+                    $(elem).find('.upload-progress').hide().css('width', '0%');
+                }
+            });
+        }
+
+        // 修改 openAdd 函数
+        window.openAdd = function(){
+            layer.open({
+                type: 1,
+                title: '添加用户',
+                content: $('#editForm').html(),
+                area: ['500px', '600px'],
+                success: function(){
+                    form.render();
+                    // 重新初始化上传组件
+                    initUpload('#uploadAvatar');
+                }
+            });
+        }
+
+        // 修改 openEdit 函数
+        window.openEdit = function(data){
+            layer.open({
+                type: 1,
+                title: '编辑用户',
+                content: $('#editForm').html(),
+                area: ['500px', '600px'],
+                success: function(){
+                    // 将密码置空
+                    data.password = "";
+                    form.val('editForm', data);
+                    // 设置头像预览
+                    if(data.avatar){
+                        $('#avatarPreview').attr('src', data.avatar);
+                    }
+                    form.render();
+                    // 重新初始化上传组件
+                    initUpload('#uploadAvatar');
+                }
+            });
+        }
     });
-
-    // 打开添加窗口
-    function openAdd(){
-        layer.open({
-            type: 1,
-            title: '添加用户',
-            content: $('#editForm').html(),
-            area: ['500px', '400px']
-        });
-        layui.form.render();
-    }
-
-    // 打开编辑窗口
-    function openEdit(data){
-        layer.open({
-            type: 1,
-            title: '编辑用户',
-            content: $('#editForm').html(),
-            area: ['500px', '400px'],
-            success: function(){
-                layui.form.val('editForm', data);
-            }
-        });
-        layui.form.render();
-    }
     </script>
 </body>
 </html>

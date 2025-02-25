@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>角色管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="__STATIC__/layui/css/layui.css">
+</head>
+<body>
+<div class="layui-card">
+    <div class="layui-card-header">
+        <span>角色管理</span>
+    </div>
+    <div class="layui-card-body">
+        <!-- 搜索表单 -->
+        <form class="layui-form layui-form-pane" lay-filter="searchForm">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <input type="text" name="name" placeholder="角色名称" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="button" class="layui-btn" lay-submit lay-filter="searchSubmit">搜索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+                <button type="button" class="layui-btn layui-btn-sm" lay-event="add" onclick="return openAdd()">
+                    <i class="layui-icon">&#xe654;</i> 添加
+                </button>
+            </div>
+        </form>
+
+        <!-- 数据表格 -->
+        <table id="roleTable" lay-filter="roleTable"></table>
+    </div>
+</div>
+
+<!-- 表格工具栏模板 -->
+<script type="text/html" id="tableBar">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="auth">授权</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<!-- 添加/编辑表单模板 -->
+<script type="text/html" id="editForm">
+    <form class="layui-form" lay-filter="editForm" style="padding: 20px;">
+        <input type="hidden" name="id">
+        <div class="layui-form-item">
+            <label class="layui-form-label">角色名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" required lay-verify="required" placeholder="请输入角色名称" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">角色标识</label>
+            <div class="layui-input-block">
+                <input type="text" name="code" required lay-verify="required" placeholder="请输入角色标识" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">描述</label>
+            <div class="layui-input-block">
+                <textarea name="remark" placeholder="请输入描述" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <input type="radio" name="status" value="1" title="启用" checked>
+                <input type="radio" name="status" value="0" title="禁用">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="editSubmit">保存</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </form>
+</script>
+
+<script src="__STATIC__/layui/layui.js"></script>
+<script>
+    layui.use(['table', 'form', 'layer'], function(){
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+
+        // 初始化表格
+        table.render({
+            elem: '#roleTable'
+            ,url: '/admin/role/list'
+            ,page: true
+            ,limits:[10, 20, 30, 50, 100]
+            ,response: {
+                statusCode: 1
+            }
+            ,cols: [[
+                {field: 'id', title: 'ID', width: 80, sort: true}
+                ,{field: 'name', title: '角色名称', width: 150}
+                ,{field: 'code', title: '角色标识', width: 150}
+                ,{field: 'remark', title: '描述'}
+                ,{field: 'status', title: '状态', width: 100, templet: function(d){
+                        return d.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' :
+                            '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    }}
+                ,{field: 'create_time', title: '创建时间', width: 180}
+                ,{title: '操作', width: 180, toolbar: '#tableBar', fixed: 'right'}
+            ]]
+        });
+
+        // 监听工具条
+        table.on('tool(roleTable)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'del'){
+                layer.confirm('确定删除吗？', function(index){
+                    $.post('/admin/role/delete', {id: data.id}, function(res){
+                        if(res.code === 1){
+                            obj.del();
+                            layer.msg('删除成功');
+                        }else{
+                            layer.msg(res.msg);
+                        }
+                    });
+                    layer.close(index);
+                });
+            } else if(obj.event === 'edit'){
+                openEdit(data);
+            } else if(obj.event === 'auth'){
+                openAuth(data);
+            }
+        });
+
+        // 监听搜索提交
+        form.on('submit(searchSubmit)', function(data){
+            table.reload('roleTable', {
+                where: data.field
+            });
+            return false;
+        });
+
+        // 监听表单提交
+        form.on('submit(editSubmit)', function(data){
+            var loading = layer.load();
+            $.post('/admin/role/save', data.field, function(res){
+                layer.close(loading);
+                if(res.code === 1){
+                    layer.closeAll('page');
+                    table.reload('roleTable');
+                    layer.msg('保存成功');
+                }else{
+                    layer.msg(res.msg);
+                }
+            });
+            return false;
+        });
+
+        // 打开添加窗口
+        window.openAdd = function(){
+            layer.open({
+                type: 1,
+                title: '添加角色',
+                content: $('#editForm').html(),
+                area: ['500px', '500px'],
+                success: function(){
+                    form.render();
+                }
+            });
+        }
+
+        // 打开编辑窗口
+        window.openEdit = function(data){
+            layer.open({
+                type: 1,
+                title: '编辑角色',
+                content: $('#editForm').html(),
+                area: ['500px', '500px'],
+                success: function(){
+                    form.val('editForm', data);
+                    form.render();
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

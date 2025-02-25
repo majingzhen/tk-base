@@ -72,7 +72,6 @@ class User extends BaseController
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 SysUser::create($data);
             }
-            
             return JsonResponse::success();
         } catch (\Exception $e) {
             return JsonResponse::error('保存失败：' . $e->getMessage());

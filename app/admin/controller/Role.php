@@ -15,6 +15,7 @@ class Role extends BaseController
      */
     public function index()
     {
+        //return view("role/test.html");
         return view();
     }
 

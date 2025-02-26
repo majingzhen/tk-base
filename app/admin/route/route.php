@@ -42,8 +42,11 @@ Route::group('', function () {
         Route::post('delete', 'role/delete');
     });
 
-
-
+    // 菜单相关
+    Route::group('menu', function () {
+        Route::get('/', 'menu/index');
+        Route::get('list', 'menu/list');
+    });
 })->middleware(\app\admin\middleware\CheckLogin::class);
 
 

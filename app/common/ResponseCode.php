@@ -3,8 +3,8 @@ namespace app\common;
 
 class ResponseCode
 {
-    const SUCCESS = 1;
-    const ERROR = 0;
+    const SUCCESS = 0;
+    const ERROR = 1;
     const UNAUTHORIZED = -1;
     
     // 系统级别错误码

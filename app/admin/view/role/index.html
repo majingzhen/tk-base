@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>角色管理</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="__STATIC__/layui/css/layui.css">
+    <link rel="stylesheet" href="__STATIC__/module/layui/css/layui.css">
 </head>
 <body>
 <div class="layui-card">
@@ -83,8 +83,8 @@
     </form>
 </script>
 
-<script src="__STATIC__/jquery/jquery.min.js"></script>
-<script src="__STATIC__/layui/layui.js"></script>
+<script src="__STATIC__/module/jquery/jquery.min.js"></script>
+<script src="__STATIC__/module/layui/layui.js"></script>
 <script>
     layui.use(['table', 'form', 'layer'], function(){
         var table = layui.table;
@@ -98,7 +98,7 @@
             ,page: true
             ,limits:[10, 20, 30, 50, 100]
             ,response: {
-                statusCode: 1
+                statusCode: 0
             }
             ,cols: [[
                 {field: 'id', title: 'ID', width: 80, sort: true}

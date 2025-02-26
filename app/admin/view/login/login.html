@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>后台管理系统 - 登录</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="__STATIC__/layui/css/layui.css">
+    <link rel="stylesheet" href="__STATIC__/module/layui/css/layui.css">
     <style>
         .login-wrap {
             height: 100vh;
@@ -71,7 +71,7 @@
         </div>
     </div>
 
-    <script src="__STATIC__/layui/layui.js"></script>
+    <script src="__STATIC__/module/layui/layui.js"></script>
     <script>
     layui.use(['form', 'layer'], function(){
         var form = layui.form;
@@ -97,7 +97,7 @@
             .then(response => response.json())
             .then(res => {
                 layer.close(loading);
-                if(res.code === 1){
+                if(res.code === 0){
                     layer.msg('登录成功', {
                         icon: 1,
                         time: 1000

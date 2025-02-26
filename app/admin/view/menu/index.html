@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>菜单管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="__STATIC__/module/layui/css/layui.css">
+</head>
+<body>
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <span>菜单管理</span>
+            <button class="layui-btn layui-btn-sm" lay-event="add" onclick="openAdd()">
+                <i class="layui-icon">&#xe654;</i> 添加
+            </button>
+        </div>
+        <div class="layui-card-body">
+            <table id="menuTable" lay-filter="menuTable"></table>
+        </div>
+    </div>
+
+    <!-- 工具栏模板 -->
+    <script type="text/html" id="toolbar">
+        <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    </script>
+
+    <!-- 状态模板 -->
+    <script type="text/html" id="statusTpl">
+        {{#  if(d.status == 1){ }}
+        <span class="layui-badge layui-bg-green">启用</span>
+        {{#  } else { }}
+        <span class="layui-badge layui-bg-gray">禁用</span>
+        {{#  } }}
+    </script>
+    <script src="__STATIC__/module/jquery/jquery.min.js"></script>
+    <script src="__STATIC__/module/layui/layui.js"></script>
+    <script>
+        var table, treeTable, layPage, form,$;
+    layui.use(['table', 'form', 'layer', 'treeTable'], function(){
+        table = layui.table;
+        treeTable = layui.treeTable;
+        layPage = layui.laypage;
+        form = layui.form;
+        $ = layui.jquery;
+        // 渲染树形表格
+        treeTable.render({
+            elem: '#menuTable'
+            ,id: 'menuTable'
+            ,url: '/admin/menu/list'
+            ,method: 'get'
+            ,page: false
+            ,tree: {
+                customName: {
+                    pid:'pid'
+                },
+                data: {},
+                view: {},
+                async: {},
+                callback: {}
+            }
+            ,parseData: function(res){
+                return {
+                    "code": res.code,
+                    "msg": res.msg,
+                    "count": res.data.length,
+                    "data": res.data
+                };
+            }
+            ,cols: [[
+                {type:'checkbox'}
+                ,{field: 'id', title: '编号', width: 60}
+                ,{field: 'name', title: '菜单名称', minWidth: 200}
+                ,{field: 'icon', title: '图标', width: 100, templet: function(d){
+                    return '<i class="layui-icon '+ d.icon +'"></i>';
+                }}
+                ,{field: 'url', title: '链接', width: 200}
+                ,{field: 'sort', title: '排序', width: 80, align: 'center'}
+                ,{field: 'status', title: '状态', width: 100, templet: '#statusTpl', align: 'center'}
+                ,{field: 'create_time', title: '创建时间', width: 160}
+                ,{field:'id;',title: '操作', width: 150, templet: '#toolbar', fixed: 'right'}
+            ]],
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        // 监听工具条事件
+        treeTable.on('tool(menuTree)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'del'){
+                layer.confirm('确定删除此菜单吗？', function(index){
+                    $.post('/admin/menu/delete', {id: data.id}, function(res){
+                        if(res.code === 1){
+                            obj.del();
+                            layer.msg('删除成功');
+                        }else{
+                            layer.msg(res.msg);
+                        }
+                    });
+                    layer.close(index);
+                });
+            } else if(obj.event === 'edit'){
+                openEdit(data);
+            }
+        });
+
+        // 打开添加窗口
+        window.openAdd = function(){
+            layer.open({
+                type: 2
+                ,title: '添加菜单'
+                ,content: '/admin/menu/form'
+                ,area: ['500px', '450px']
+                ,maxmin: true
+                ,end: function(){
+                    inst.reload();
+                }
+            });
+        }
+
+        // 打开编辑窗口
+        window.openEdit = function(data){
+            layer.open({
+                type: 2
+                ,title: '编辑菜单'
+                ,content: '/admin/menu/form?id=' + data.id
+                ,area: ['500px', '450px']
+                ,maxmin: true
+                ,end: function(){
+                    inst.reload();
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html>

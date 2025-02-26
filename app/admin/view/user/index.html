@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <title>用户管理</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="__STATIC__/layui/css/layui.css">
-    <link rel="stylesheet" href="__STATIC__/css/upload.css">
+    <link rel="stylesheet" href="__STATIC__/module/layui/css/layui.css">
+    <link rel="stylesheet" href="__STATIC__/admin/css/upload.css">
 </head>
 <body>
     <div class="layui-card">
@@ -106,9 +106,9 @@
         </form>
     </script>
 
-    <script src="__STATIC__/jquery/jquery.min.js"></script>
-    <script src="__STATIC__/layui/layui.js"></script>
-    <script src="__STATIC__/xm-select/xm-select.js"></script>
+    <script src="__STATIC__/module/jquery/jquery.min.js"></script>
+    <script src="__STATIC__/module/layui/layui.js"></script>
+    <script src="__STATIC__/module/xm-select/xm-select.js"></script>
     <script>
     layui.use(['table', 'form', 'layer', 'upload'], function(){
         var table = layui.table;
@@ -123,7 +123,7 @@
             ,page: true
             ,limits:[10, 20, 30, 50,  100]
             ,response: {
-                statusCode: 1
+                statusCode: 0
             }
             ,cols: [[
                 {field: 'id', title: 'ID', width: 80, sort: true}
@@ -151,7 +151,7 @@
                 layer.confirm('确定删除吗？', function(index){
                     // 发送删除请求
                     $.post('/admin/user/delete', {id: data.id}, function(res){
-                        if(res.code === 1){
+                        if(res.code === 0){
                             obj.del();
                             layer.msg('删除成功');
                         }else{
@@ -182,7 +182,7 @@
 
             $.post('/admin/user/save', data.field, function(res){
                 layer.close(loading);
-                if(res.code === 1){
+                if(res.code === 0){
                     layer.closeAll('page');
                     table.reload('userTable');
                     layer.msg('保存成功');
@@ -215,17 +215,13 @@
 
             // 加载角色数据
             $.get('/admin/role/list', function(res) {
-                if (res.code === 1) {
-                    console.log('角色数据:', res.data); // 调试用
-                    
+                if (res.code === 0) {
                     // 更新数据
                     window.roleSelect.update({
                         data: res.data
                     });
-
                     // 如果是编辑模式且有选中值
                     if (selected && selected.length > 0) {
-                        console.log('选中值:', selected); // 调试用
                         window.roleSelect.setValue(selected);
                     }
                 } else {
@@ -253,7 +249,7 @@
                     $(elem).find('.upload-progress').css('width', percent);
                 }
                 ,done: function(res){
-                    if(res.code === 1){
+                    if(res.code === 0){
                         $(elem).closest('.layui-form-item').find('input[name=avatar]').val(res.data);
                         layer.msg('上传成功');
                     }else{
@@ -302,7 +298,7 @@
 
                     // 获取用户角色并设置选中
                     $.get('/admin/user/roles', { id: data.id }, function(res) {
-                        if (res.code === 1) {
+                        if (res.code === 0) {
                             console.log('用户角色数据:', res.data); // 调试用
                             initRoleSelect(res.data);
                         } else {

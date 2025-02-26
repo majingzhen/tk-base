@@ -21,6 +21,7 @@
 
     <!-- 工具栏模板 -->
     <script type="text/html" id="toolbar">
+        <a class="layui-btn layui-btn-xs" lay-event="add">添加子菜单</a>
         <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
         <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
     </script>
@@ -33,6 +34,52 @@
         <span class="layui-badge layui-bg-gray">禁用</span>
         {{#  } }}
     </script>
+    <!-- 编辑表单模板 -->
+    <script type="text/html" id="editForm">
+        <form class="layui-form"lay-filter="editForm" style="padding: 20px;">
+            <input type="hidden" name="id">
+            <input type="hidden" name="pid">
+            <div class="layui-form-item">
+                <label class="layui-form-label">菜单名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" required lay-verify="required" placeholder="请输入菜单名" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">菜单图标</label>
+                <div class="layui-input-block">
+                    <input type="text" name="icon" placeholder="请输入菜单图标" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">菜单链接</label>
+                <div class="layui-input-block">
+                    <input type="text" name="url" required lay-verify="required" placeholder="请输入菜单链接" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">排序</label>
+                <div class="layui-input-block">
+                    <input type="number" name="sort" placeholder="请输入排序" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-block">
+                    <input type="radio" name="status" value="1" title="启用" checked>
+                    <input type="radio" name="status" value="0" title="禁用">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="editSubmit">保存</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                </div>
+            </div>
+        </form>
+    </script>
+
+
     <script src="__STATIC__/module/jquery/jquery.min.js"></script>
     <script src="__STATIC__/module/layui/layui.js"></script>
     <script>
@@ -59,17 +106,8 @@
                 async: {},
                 callback: {}
             }
-            ,parseData: function(res){
-                return {
-                    "code": res.code,
-                    "msg": res.msg,
-                    "count": res.data.length,
-                    "data": res.data
-                };
-            }
             ,cols: [[
-                {type:'checkbox'}
-                ,{field: 'id', title: '编号', width: 60}
+                {type:'numbers',title: '编号', width: 60}
                 ,{field: 'name', title: '菜单名称', minWidth: 200}
                 ,{field: 'icon', title: '图标', width: 100, templet: function(d){
                     return '<i class="layui-icon '+ d.icon +'"></i>';
@@ -78,20 +116,34 @@
                 ,{field: 'sort', title: '排序', width: 80, align: 'center'}
                 ,{field: 'status', title: '状态', width: 100, templet: '#statusTpl', align: 'center'}
                 ,{field: 'create_time', title: '创建时间', width: 160}
-                ,{field:'id;',title: '操作', width: 150, templet: '#toolbar', fixed: 'right'}
+                ,{field:'id;',title: '操作', width: 250, templet: '#toolbar', fixed: 'right'}
             ]],
             done: function () {
                 layer.closeAll('loading');
             }
         });
-
+        // 监听表单提交
+        form.on('submit(editSubmit)', function(data){
+            var loading = layer.load();
+            $.post('/admin/menu/save', data.field, function(res){
+                layer.close(loading);
+                if(res.code === 0){
+                    layer.closeAll('page');
+                    table.reload('menuTable');
+                    layer.msg('保存成功');
+                }else{
+                    layer.msg(res.msg);
+                }
+            });
+            return false;
+        });
         // 监听工具条事件
-        treeTable.on('tool(menuTree)', function(obj){
+        treeTable.on('tool(menuTable)', function(obj){
             var data = obj.data;
             if(obj.event === 'del'){
                 layer.confirm('确定删除此菜单吗？', function(index){
                     $.post('/admin/menu/delete', {id: data.id}, function(res){
-                        if(res.code === 1){
+                        if(res.code === 0){
                             obj.del();
                             layer.msg('删除成功');
                         }else{
@@ -102,19 +154,21 @@
                 });
             } else if(obj.event === 'edit'){
                 openEdit(data);
+            } else if (obj.event === 'add'){
+                openAdd({pid: data.id});
             }
         });
 
         // 打开添加窗口
-        window.openAdd = function(){
+        window.openAdd = function(data){
             layer.open({
-                type: 2
-                ,title: '添加菜单'
-                ,content: '/admin/menu/form'
-                ,area: ['500px', '450px']
-                ,maxmin: true
-                ,end: function(){
-                    inst.reload();
+                type: 1,
+                title: '添加菜单',
+                content: $('#editForm').html(),
+                area: ['500px', '600px'],
+                success: function(){
+                    form.val('editForm', data);
+                    form.render();
                 }
             });
         }
@@ -122,13 +176,13 @@
         // 打开编辑窗口
         window.openEdit = function(data){
             layer.open({
-                type: 2
-                ,title: '编辑菜单'
-                ,content: '/admin/menu/form?id=' + data.id
-                ,area: ['500px', '450px']
-                ,maxmin: true
-                ,end: function(){
-                    inst.reload();
+                type: 1,
+                title: '编辑菜单',
+                content: $('#editForm').html(),
+                area: ['500px', '600px'],
+                success: function(){
+                    form.val('editForm', data);
+                    form.render();
                 }
             });
         }

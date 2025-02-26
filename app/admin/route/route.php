@@ -46,6 +46,8 @@ Route::group('', function () {
     Route::group('menu', function () {
         Route::get('/', 'menu/index');
         Route::get('list', 'menu/list');
+        Route::post('save', 'menu/save');
+        Route::post('delete', 'menu/delete');
     });
 })->middleware(\app\admin\middleware\CheckLogin::class);
 

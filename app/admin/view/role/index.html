@@ -149,7 +149,7 @@
             var loading = layer.load();
             $.post('/admin/role/save', data.field, function(res){
                 layer.close(loading);
-                if(res.code === 1){
+                if(res.code === 0){
                     layer.closeAll('page');
                     table.reload('roleTable');
                     layer.msg('保存成功');

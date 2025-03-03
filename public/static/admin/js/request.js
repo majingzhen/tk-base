@@ -1,96 +1,27 @@
-/**
- * 通用请求处理类
- */
-const Request = {
-    // 默认配置
-    config: {
-        showLoading: true,      // 是否显示加载层
-        showError: true,        // 是否显示错误提示
-        showSuccess: true,      // 是否显示成功提示
-        successCode: 1,         // 成功状态码
-        errorCallback: null,    // 错误回调
-        successCallback: null,  // 成功回调
+$.ajaxSetup({
+    // 在发送请求前执行的函数
+    beforeSend: function(xhr) {
+        // 例如添加认证令牌
+        //xhr.setRequestHeader('Authorization', 'Bearer ' + token);
     },
-
-    /**
-     * 发送请求
-     * @param {Object} options 请求配置项
-     * @returns {Promise}
-     */
-    send(options) {
-        // 合并配置
-        const opts = Object.assign({}, this.config, options);
-        let loadIndex;
-
-        // 显示加载层
-        if (opts.showLoading) {
-            loadIndex = layer.load(1);
+    // 请求完成后执行(无论成功或失败)
+    complete: function(xhr, status) {
+        console.log('请求完成，状态：' + status);
+    },
+    // 请求成功时的默认处理
+    success: function(response) {
+        // 通用的响应处理
+        if (response.code === 0) {
+            // 处理成功响应
+            console.log('成功响应：' + response.data);
+        } else {
+            // 处理业务逻辑错误
+            console.log('业务错误：' + response.message);
         }
-
-        return new Promise((resolve, reject) => {
-            $.ajax({
-                url: opts.url,
-                type: opts.type || 'POST',
-                data: opts.data || {},
-                dataType: opts.dataType || 'json',
-                success: (res) => {
-                    // 关闭加载层
-                    opts.showLoading && layer.close(loadIndex);
-
-                    if (res.code === opts.successCode) {
-                        // 成功提示
-                        opts.showSuccess && layer.msg(res.msg || '操作成功', {icon: 1});
-                        // 执行成功回调
-                        opts.successCallback && opts.successCallback(res);
-                        resolve(res);
-                    } else {
-                        // 错误提示
-                        opts.showError && layer.msg(res.msg || '操作失败', {icon: 2});
-                        // 执行错误回调
-                        opts.errorCallback && opts.errorCallback(res);
-                        reject(res);
-                    }
-                },
-                error: (xhr, status, error) => {
-                    // 关闭加载层
-                    opts.showLoading && layer.close(loadIndex);
-                    // 错误提示
-                    opts.showError && layer.msg('网络错误', {icon: 2});
-                    reject({code: -1, msg: error});
-                }
-            });
-        });
     },
-
-    /**
-     * POST请求
-     * @param {string} url 请求地址
-     * @param {Object} data 请求数据
-     * @param {Object} options 配置项
-     * @returns {Promise}
-     */
-    post(url, data = {}, options = {}) {
-        return this.send({
-            url,
-            data,
-            type: 'POST',
-            ...options
-        });
-    },
-
-    /**
-     * GET请求
-     * @param {string} url 请求地址
-     * @param {Object} data 请求数据
-     * @param {Object} options 配置项
-     * @returns {Promise}
-     */
-    get(url, data = {}, options = {}) {
-        return this.send({
-            url,
-            data,
-            type: 'GET',
-            ...options
-        });
+    // 请求失败时的默认处理
+    error: function(xhr, status, error) {
+        // 通用的错误处理
+        console.log('请求失败，状态：' + status + ', 错误信息：' + error);
     }
-};
+});

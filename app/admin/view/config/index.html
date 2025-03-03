@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>系统配置</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="__STATIC__/module/layui/css/layui.css">
+</head>
+<body>
+<div class="layui-card">
+    <div class="layui-card-header">
+        <span>系统配置</span>
+    </div>
+    <div class="layui-card-body">
+        <!-- 搜索表单 -->
+        <form class="layui-form layui-form-pane" lay-filter="searchForm">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <input type="text" name="name" placeholder="配置名称/键名" class="layui-input">
+                    </div>
+                    <div class="layui-input-inline">
+                        <select name="tab">
+                            <option value="">全部分组</option>
+                            <option value="base">基础配置</option>
+                            <option value="upload">上传配置</option>
+                            <option value="system">系统配置</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="button" class="layui-btn" lay-submit lay-filter="searchSubmit">搜索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+                    <button type="button" class="layui-btn" onclick="return openAdd()">
+                        <i class="layui-icon">&#xe654;</i> 添加
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- 数据表格 -->
+        <table id="configTable" lay-filter="configTable"></table>
+    </div>
+</div>
+
+<!-- 表格工具条 -->
+<script type="text/html" id="tableBar">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<!-- 编辑表单 -->
+<script type="text/html" id="editForm">
+    <form class="layui-form" lay-filter="editForm" style="padding: 20px;">
+        <input type="hidden" name="id">
+        <div class="layui-form-item">
+            <label class="layui-form-label">配置名称</label>
+            <div class="layui-input-block">
+                <input type="text" name="name" required lay-verify="required" placeholder="请输入配置名称" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">配置键名</label>
+            <div class="layui-input-block">
+                <input type="text" name="key" required lay-verify="required" placeholder="请输入配置键名" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">配置类型</label>
+            <div class="layui-input-block">
+                <select name="type" lay-verify="required" lay-filter="configType">
+                    <option value="text">文本框</option>
+                    <option value="textarea">文本域</option>
+                    <option value="number">数字</option>
+                    <option value="select">下拉框</option>
+                    <option value="radio">单选框</option>
+                    <option value="checkbox">复选框</option>
+                    <option value="image">图片</option>
+                    <option value="switch">开关</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item" id="optionsItem" style="display:none;">
+            <label class="layui-form-label">选项值</label>
+            <div class="layui-input-block">
+                <textarea name="options" placeholder="每行一个选项,格式:值:标签" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">配置分组</label>
+            <div class="layui-input-block">
+                <select name="tab" lay-verify="required">
+                    <option value="base">基础配置</option>
+                    <option value="upload">上传配置</option>
+                    <option value="system">系统配置</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">配置值</label>
+            <div class="layui-input-block">
+                <textarea name="value" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">排序</label>
+            <div class="layui-input-block">
+                <input type="number" name="sort" value="0" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+                <input type="radio" name="status" value="1" title="启用" checked>
+                <input type="radio" name="status" value="0" title="禁用">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">说明</label>
+            <div class="layui-input-block">
+                <textarea name="remark" placeholder="请输入配置说明" class="layui-textarea"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="editSubmit">保存</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </form>
+</script>
+
+<script src="__STATIC__/module/layui/layui.js"></script>
+<script>
+layui.use(['table', 'form', 'layer'], function(){
+    var table = layui.table;
+    var form = layui.form;
+    var layer = layui.layer;
+    var $ = layui.$; // 添加此行，确保 $ 正常使用
+    
+    // 初始化表格
+    table.render({
+        elem: '#configTable'
+        ,url: '/admin/config/page'
+        ,page: true
+        ,limits: [10, 20, 30, 50, 100]
+        ,response: {
+            statusCode: 0
+        }
+        ,cols: [[
+            {field: 'id', title: 'ID', width: 80, sort: true}
+            ,{field: 'name', title: '配置名称', width: 150}
+            ,{field: 'key', title: '配置键名', width: 150}
+            ,{field: 'value', title: '配置值', width: 200}
+            ,{field: 'type', title: '配置类型', width: 100}
+            ,{field: 'tab', title: '配置分组', width: 100}
+            ,{field: 'sort', title: '排序', width: 80}
+            ,{field: 'status', title: '状态', width: 80, templet: function(d){
+                return d.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : 
+                    '<span class="layui-badge layui-bg-gray">禁用</span>';
+            }}
+            ,{title: '操作', width: 150, toolbar: '#tableBar', fixed: 'right'}
+        ]]
+    });
+
+    // 监听工具条
+    table.on('tool(configTable)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'del'){
+            layer.confirm('确定删除吗?', function(index){
+                // 发送删除请求
+                Request.post('/admin/config/delete', {id: data.id})
+                    .then(() => {
+                        obj.del();
+                        layer.close(index);
+                    });
+            });
+        } else if(obj.event === 'edit'){
+            openEdit(data);
+        }
+    });
+
+    // 监听搜索提交
+    form.on('submit(searchSubmit)', function(data){
+        table.reload('configTable', {
+            where: data.field
+        });
+        return false;
+    });
+
+    // 监听配置类型切换
+    form.on('select(configType)', function(data){
+        var type = data.value;
+        if(['select', 'radio', 'checkbox'].indexOf(type) > -1){
+            $('#optionsItem').show();
+        } else {
+            $('#optionsItem').hide();
+        }
+    });
+
+    // 监听表单提交
+    form.on('submit(editSubmit)', function(data){
+        Request.post('/admin/config/save', data.field)
+            .then(() => {
+                layer.closeAll('page');
+                table.reload('configTable');
+            });
+        return false;
+    });
+
+    // 打开添加窗口
+    window.openAdd = function(){
+        layer.open({
+            type: 1,
+            title: '添加配置',
+            content: $('#editForm').html(),
+            area: ['600px', '800px'],
+            success: function(){
+                form.render();
+            }
+        });
+    }
+
+    // 打开编辑窗口  
+    window.openEdit = function(data){
+        layer.open({
+            type: 1,
+            title: '编辑配置',
+            content: $('#editForm').html(),
+            area: ['600px', '800px'],
+            success: function(){
+                form.val('editForm', data);
+                // 如果是选项类型,显示选项值输入框
+                if(['select', 'radio', 'checkbox'].indexOf(data.type) > -1){
+                    $('#optionsItem').show();
+                }
+                form.render();
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>

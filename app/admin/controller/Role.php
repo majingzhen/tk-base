@@ -46,7 +46,7 @@ class Role extends BaseController
         }
 
         $count = SysRole::where($where)->count();
-        $list = SysRole::where($where)
+        $list = SysRole::where($where)->with(['menus'])
             ->page($page, $limit)
             ->order('id', 'desc')
             ->select();
@@ -64,9 +64,16 @@ class Role extends BaseController
         try {
             Db::startTrans();
             if (isset($data['id']) && $data['id']) {
-                SysRole::update($data);
+                $role = SysRole::update($data);
+                $role->menus()->detach();
+                if (isset($data['menuIds'])) {
+                    $role->menus()->sync($data['menuIds']);
+                }
             } else {
-                SysRole::create($data);
+                $role = SysRole::create($data);
+                if (isset($data['menuIds'])) {
+                    $role->menus()->sync($data['menuIds']);
+                }
             }
             Db::commit();
             return JsonResponse::success();

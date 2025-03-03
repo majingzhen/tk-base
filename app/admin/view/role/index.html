@@ -37,12 +37,11 @@
         <table id="roleTable" lay-filter="roleTable"></table>
     </div>
 </div>
-<div id="authMenuTree"></div>
+
 
 <!-- 表格工具栏模板 -->
 <script type="text/html" id="tableBar">
     <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
-    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="auth">授权</a>
     <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
 </script>
 
@@ -78,7 +77,7 @@
         <div class="layui-form-item">
             <label class="layui-form-label">菜单权限</label>
             <div class="layui-input-block">
-
+                <div id="authMenuTree"></div>
             </div>
         </div>
         <div class="layui-form-item">
@@ -89,8 +88,9 @@
         </div>
     </form>
 </script>
-
+<script src="__STATIC__/module/jquery/jquery.min.js"></script>
 <script src="__STATIC__/module/layui/layui.js"></script>
+
 <script>
     layui.use(['table', 'form', 'layer','tree'], function(){
         var table = layui.table;
@@ -138,30 +138,56 @@
                 });
             } else if(obj.event === 'edit'){
                 openEdit(data);
-            } else if(obj.event === 'auth'){
-                openAuth(data);
             }
         });
-        //var data = [{title:'A-1',id:1,field:'name1',checked:true,spread:true,children:[{title:'B-1-1 可允许跳转',id:3,field:'name11',href:'',children:[{title:'C-1-1-3',id:23,field:'',children:[{title:'D-1-1-3-1',id:24,field:'',children:[{title:'E-1-1-3-1-1',id:30,field:''},{title:'E-1-1-3-1-2',id:31,field:''}]}]},{title:'C-1-1-1',id:7,field:'',children:[{title:'D-1-1-1-1 可允许跳转',id:15,field:'',href:''}]},{title:'C-1-1-2',id:8,field:'',children:[{title:'D-1-1-2-1',id:32,field:''}]}]},{title:'B-1-2',id:4,spread:true,children:[{title:'C-1-2-1',id:9,field:'',disabled:true},{title:'C-1-2-2',id:10,field:''}]},{title:'B-1-3',id:20,field:'',children:[{title:'C-1-3-1',id:21,field:''},{title:'C-1-3-2',id:22,field:''}]}]},{title:'A-2',id:2,field:'',spread:true,children:[{title:'B-2-1',id:5,field:'',spread:true,children:[{title:'C-2-1-1',id:11,field:''},{title:'C-2-1-2',id:12,field:''}]},{title:'B-2-2',id:6,field:'',children:[{title:'C-2-2-1',id:13,field:''},{title:'C-2-2-2',id:14,field:'',disabled:true}]}]},{title:'A-3',id:16,field:'',children:[{title:'B-3-1',id:17,field:'',fixed:true,children:[{title:'C-3-1-1',id:18,field:''},{title:'C-3-1-2',id:19,field:''}]},{title:'B-3-2',id:27,field:'',children:[{title:'C-3-2-1',id:28,field:''},{title:'C-3-2-2',id:29,field:''}]}]}];
         // 初始化菜单库
-        $.get('/admin/menu/list', function(res){
-            if(res.code === 0) {
-                tree.render({
-                    elem: '#authMenuTree',
-                    data: res.data,
-                    showCheckbox: true,  // 是否显示复选框
-                    onlyIconControl: true,  // 是否仅允许节点左侧图标控制展开收缩
-                    id: 'authMenu',
-                    isJump: false, // 是否允许点击节点时弹出新窗口跳转
-                    customName: {
-                        id: 'id',
-                        title: 'name'
+        function getAuthMenuList(authData) {
+            $.get('/admin/menu/list', function(res){
+                if(res.code === 0) {
+                    const authMap = {};
+                    if(authData) {
+                        authData.forEach(item => {
+                            authMap[item.id] = true;
+                        });
                     }
-                });
-            } else {
-                layer.msg(res.msg);
-            }
-        });
+                    
+                    // 递归处理树节点：如果节点有子节点，则根据所有子节点的选中状态决定父节点状态
+                    const processNodes = (items) => {
+                        return items.map(item => {
+                            const node = { ...item };
+                            if(node.children && node.children.length > 0) {
+                                node.children = processNodes(node.children);
+                                // 当所有子节点都选中时，父节点才显示为选中
+                                node.checked = node.children.every(child => child.checked);
+                            } else {
+                                // 叶子节点：根据权限直接设置 checked
+                                if(authMap[node.id]){
+                                    node.checked = true;
+                                }
+                            }
+                            return node;
+                        });
+                    };
+                    
+                    const treeData = processNodes(res.data);
+                    
+                    tree.render({
+                        elem: '#authMenuTree',
+                        data: treeData,
+                        showCheckbox: true,
+                        onlyIconControl: true,
+                        id: 'authMenu',
+                        isJump: false,
+                        customName: {
+                            id: 'id',
+                            title: 'name'
+                        }
+                    });
+                } else {
+                    layer.msg(res.msg);
+                }
+            });
+        }
         // 监听搜索提交
         form.on('submit(searchSubmit)', function(data){
             table.reload('roleTable', {
@@ -173,6 +199,21 @@
         // 监听表单提交
         form.on('submit(editSubmit)', function(data){
             var loading = layer.load();
+            // 收集选中的菜单ID
+            var checkedData = tree.getChecked('authMenu');
+            var menuIds = [];
+            
+            // 递归收集选中节点ID
+            const collectIds = (items) => {
+                items.forEach(item => {
+                    menuIds.push(item.id);
+                    if(item.children && item.children.length > 0) {
+                        collectIds(item.children);
+                    }
+                });
+            };
+            collectIds(checkedData);
+            data.field.menuIds = menuIds;
             $.post('/admin/role/save', data.field, function(res){
                 layer.close(loading);
                 if(res.code === 0){
@@ -195,6 +236,7 @@
                 content: $('#editForm').html(),
                 area: ['500px', '500px'],
                 success: function(){
+                    getAuthMenuList();
                     form.render();
                 }
             });
@@ -209,6 +251,7 @@
                 area: ['500px', '500px'],
                 success: function(){
                     form.val('editForm', data);
+                    getAuthMenuList(data.menus);
                     form.render();
                 }
             });

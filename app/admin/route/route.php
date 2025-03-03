@@ -49,6 +49,13 @@ Route::group('', function () {
         Route::post('save', 'menu/save');
         Route::post('delete', 'menu/delete');
     });
+    // 配置管理
+    Route::group('config', function () {
+        Route::get('/', 'config/index');
+        Route::get('page', 'config/page');
+        Route::post('save', 'config/save');
+        Route::post('delete', 'config/delete');
+    });
 })->middleware(\app\admin\middleware\CheckLogin::class);
 
 

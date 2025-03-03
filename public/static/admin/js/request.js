@@ -1,27 +1,54 @@
-$.ajaxSetup({
-    // 在发送请求前执行的函数
-    beforeSend: function(xhr) {
-        // 例如添加认证令牌
-        //xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+// 定义请求工具类
+const Request = {
+    // GET请求
+    get(url, params = {}) {
+        return this.request('GET', url, params);
     },
-    // 请求完成后执行(无论成功或失败)
-    complete: function(xhr, status) {
-        console.log('请求完成，状态：' + status);
+
+    // POST请求
+    post(url, data = {}) {
+        return this.request('POST', url, data);
     },
-    // 请求成功时的默认处理
-    success: function(response) {
-        // 通用的响应处理
-        if (response.code === 0) {
-            // 处理成功响应
-            console.log('成功响应：' + response.data);
-        } else {
-            // 处理业务逻辑错误
-            console.log('业务错误：' + response.message);
-        }
-    },
-    // 请求失败时的默认处理
-    error: function(xhr, status, error) {
-        // 通用的错误处理
-        console.log('请求失败，状态：' + status + ', 错误信息：' + error);
+
+    // 统一请求处理
+    request(method, url, data = {}) {
+        return new Promise((resolve, reject) => {
+            $.ajax({
+                url: url,
+                type: method,
+                data: data,
+                dataType: 'json',
+                beforeSend: function(xhr) {
+                    // 可以在这里添加loading
+                    layer.load();
+                },
+                success: function(res) {
+                    if (res.code === 0) {
+                        resolve(res.data);
+                    } else if (res.code === -1) {
+                        // 未授权处理
+                        layer.msg('登录已过期，请重新登录', {icon: 2});
+                        // 判断是否在iframe中
+                        if (window.self !== window.top) {
+                            // 在iframe中，跳转父窗口
+                            window.parent.location.href = '/admin/login';
+                        } else {
+                            // 不在iframe中，直接跳转
+                            window.location.href = '/admin/login';
+                        }
+                    } else {
+                        layer.msg(res.message || '操作失败', {icon: 2});
+                        reject(res);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    layer.msg('网络错误，请稍后重试', {icon: 2});
+                    reject(error);
+                },
+                complete: function() {
+                    layer.closeAll('loading');
+                }
+            });
+        });
     }
-});
+};

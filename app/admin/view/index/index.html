@@ -48,6 +48,7 @@
 
     <script src="__STATIC__/module/jquery/jquery.min.js"></script>
     <script src="__STATIC__/module/layui/layui.js"></script>
+    <script src="__STATIC__/admin/js/request.js"></script>
     <script>
         layui.use(['element'], function(){
             var element = layui.element;
@@ -73,17 +74,11 @@
         });
         
         function getLoginUser() {
-            $.ajax({
-                url: '/admin/getLoginUser',
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    if (data.code === 0) {
-                        $('.layui-nav-img').attr('src', data.data.avatar);
-                        $('.layui-nav-item a').first().html(data.data.nickname);
-                    }
-                }
-            })
+            Request.get('/admin/getLoginUser')
+                .then(data => {
+                    $('.layui-nav-img').attr('src', data.avatar);
+                    $('.layui-nav-item a').first().html(data.nickname);
+                });
         }
         
         function handleMenuUrl(url) {
@@ -92,36 +87,30 @@
         }
         
         function getMenu() {
-            $.ajax({
-                url: '/admin/getMenu',
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    if (data.code === 0) {
-                        var menuHtml = '';
-                        data.data.forEach(function(menu) {
-                            menuHtml += '<li class="layui-nav-item">';
-                            if (menu.children && menu.children.length > 0) {
-                                menuHtml += '<a href="javascript:;">' + menu.name + '</a>';
-                                menuHtml += '<dl class="layui-nav-child">';
-                                menu.children.forEach(function(subMenu) {
-                                    // 修改为iframe方式加载
-                                    menuHtml += '<dd><a href="' + handleMenuUrl(subMenu.url) + '" target="mainFrame">' 
-                                        + subMenu.name + '</a></dd>';
-                                });
-                                menuHtml += '</dl>';
-                            } else {
+            Request.get('/admin/getMenu')
+                .then(data => {
+                    var menuHtml = '';
+                    data.forEach(function(menu) {
+                        menuHtml += '<li class="layui-nav-item">';
+                        if (menu.children && menu.children.length > 0) {
+                            menuHtml += '<a href="javascript:;">' + menu.name + '</a>';
+                            menuHtml += '<dl class="layui-nav-child">';
+                            menu.children.forEach(function(subMenu) {
                                 // 修改为iframe方式加载
-                                menuHtml += '<a href="' + handleMenuUrl(menu.url) + '" target="mainFrame">' 
-                                    + menu.name + '</a>';
-                            }
-                            menuHtml += '</li>';
-                        });
-                        $('.layui-nav-tree').html(menuHtml);
-                        layui.element.render('nav');
-                    }
-                }
-            });
+                                menuHtml += '<dd><a href="' + handleMenuUrl(subMenu.url) + '" target="mainFrame">' 
+                                    + subMenu.name + '</a></dd>';
+                            });
+                            menuHtml += '</dl>';
+                        } else {
+                            // 修改为iframe方式加载
+                            menuHtml += '<a href="' + handleMenuUrl(menu.url) + '" target="mainFrame">' 
+                                + menu.name + '</a>';
+                        }
+                        menuHtml += '</li>';
+                    });
+                    $('.layui-nav-tree').html(menuHtml);
+                    layui.element.render('nav');
+                });
         }
         
         // 替换loadContent函数为changeMainFrame函数

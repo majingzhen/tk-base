@@ -72,6 +72,7 @@
     </div>
 
     <script src="__STATIC__/module/layui/layui.js"></script>
+    <script src="__STATIC__/admin/js/request.js"></script>
     <script>
     layui.use(['form', 'layer'], function(){
         var form = layui.form;
@@ -84,37 +85,19 @@
         
         // 监听提交
         form.on('submit(loginForm)', function(data){
-            var loading = layer.load(2);
-            
-            // 发送登录请求
-            fetch('{:url("login/check")}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data.field)
-            })
-            .then(response => response.json())
-            .then(res => {
-                layer.close(loading);
-                if(res.code === 0){
+            Request.post('{:url("login/check")}', data.field)
+                .then(() => {
                     layer.msg('登录成功', {
                         icon: 1,
                         time: 1000
                     }, function(){
                         window.location.href = '{:url("index/index")}';
                     });
-                }else{
-                    layer.msg(res.msg, {icon: 2});
+                })
+                .catch(() => {
                     // 刷新验证码
                     document.getElementById('captcha').click();
-                }
-            })
-            .catch(err => {
-                layer.close(loading);
-                layer.msg('服务器错误', {icon: 2});
-            });
-            
+                });
             return false;
         });
     });

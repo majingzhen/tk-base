@@ -31,6 +31,7 @@ Route::group('', function () {
         Route::post('save', 'user/save');
         Route::post('delete', 'user/delete');
         Route::get('roles', 'user/roles');
+        Route::post('unlock', 'user/unlock');
     });
 
     // 角色相关
@@ -55,6 +56,7 @@ Route::group('', function () {
         Route::get('page', 'config/page');
         Route::post('save', 'config/save');
         Route::post('delete', 'config/delete');
+        Route::get('getConfigByTab', 'config/getConfigByTab');
     });
 })->middleware(\app\admin\middleware\CheckLogin::class);
 

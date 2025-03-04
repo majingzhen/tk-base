@@ -85,4 +85,14 @@ class Config extends BaseController
             return JsonResponse::error($e->getMessage());
         }
     }
+
+    public function getConfigByTab() {
+        $tab = input('tab', '');
+        try {
+            $config = SysConfig::where('tab', $tab)->select();
+            return JsonResponse::success($config);
+        } catch (\Exception $e) {
+            return JsonResponse::error($e->getMessage());
+        }
+    }
 }

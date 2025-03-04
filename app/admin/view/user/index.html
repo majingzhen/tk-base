@@ -38,8 +38,13 @@
 
     <!-- 表格工具栏模板 -->
     <script type="text/html" id="tableBar">
+        {{# if(d.status === -1){ }}
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="unlock">解锁</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+        {{# }else{ }}
         <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
         <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+        {{# } }}
     </script>
 
     <!-- 添加/编辑表单模板 -->
@@ -106,15 +111,23 @@
         </form>
     </script>
 
-    <script src="__STATIC__/module/jquery/jquery.min.js"></script>
     <script src="__STATIC__/module/layui/layui.js"></script>
     <script src="__STATIC__/module/xm-select/xm-select.js"></script>
     <script>
-    layui.use(['table', 'form', 'layer', 'upload'], function(){
+        layui.config({
+            base: '__STATIC__/common/js/'
+        }).extend({
+            request: 'request'
+        });
+    </script>
+    <script>
+    layui.use(['table', 'form', 'layer', 'upload','request'], function(){
         var table = layui.table;
         var form = layui.form;
         var layer = layui.layer;
         var upload = layui.upload;
+        var $ = layui.jquery;
+        var Request = layui.request;
         
         // 初始化表格
         table.render({
@@ -134,8 +147,13 @@
                     return '<img src="'+d.avatar+'" style="width: 40px; height: 40px; border-radius: 50%;">';
                 }}
                 ,{field: 'status', title: '状态', width: 100, templet: function(d){
-                    return d.status == 1 ? '<span class="layui-badge layui-bg-green">启用</span>' : 
-                        '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    if (d.status == 1) {
+                        return '<span class="layui-badge layui-bg-green">启用</span>';
+                    } else if (d.status == 0) {
+                        return '<span class="layui-badge layui-bg-gray">禁用</span>';
+                    }  else if (d.status == -1) {
+                        return '<span class="layui-badge layui-bg-red">锁定</span>';
+                    }
                 }}
                 ,{field: 'login_time', title: '最后登录时间', width: 180}
                 ,{field: 'login_ip', title: '最后登录IP', width: 150}
@@ -150,18 +168,22 @@
             if(obj.event === 'del'){
                 layer.confirm('确定删除吗？', function(index){
                     // 发送删除请求
-                    $.post('/admin/user/delete', {id: data.id}, function(res){
-                        if(res.code === 0){
-                            obj.del();
-                            layer.msg('删除成功');
-                        }else{
-                            layer.msg(res.msg);
-                        }
+                    Request.post('/admin/user/delete', {id: data.id}).then(() => {
+                        obj.del();
+                        layer.msg('删除成功');
                     });
                     layer.close(index);
                 });
             } else if(obj.event === 'edit'){
                 openEdit(data);
+            } else if(obj.event === 'unlock'){
+                layer.confirm('确定要解锁该用户吗？', function(index){
+                    Request.post('/admin/user/unlock', {id: data.id}).then(() => {
+                        table.reload('userTable');
+                        layer.msg('解锁成功');
+                    });
+                    layer.close(index);
+                });
             }
         });
 
@@ -179,16 +201,11 @@
             // 获取选中的角色 ID
             var roleIds = window.roleSelect.getValue('valueStr');
             data.field.role_ids = roleIds;
-
-            $.post('/admin/user/save', data.field, function(res){
+            Request.post('/admin/user/save', data.field).then(() => {
                 layer.close(loading);
-                if(res.code === 0){
-                    layer.closeAll('page');
-                    table.reload('userTable');
-                    layer.msg('保存成功');
-                }else{
-                    layer.msg(res.msg);
-                }
+                layer.closeAll('page');
+                table.reload('userTable');
+                layer.msg('保存成功');
             });
             return false;
         });
@@ -214,18 +231,14 @@
             });
 
             // 加载角色数据
-            $.get('/admin/role/list', function(res) {
-                if (res.code === 0) {
-                    // 更新数据
-                    window.roleSelect.update({
-                        data: res.data
-                    });
-                    // 如果是编辑模式且有选中值
-                    if (selected && selected.length > 0) {
-                        window.roleSelect.setValue(selected);
-                    }
-                } else {
-                    layer.msg('获取角色列表失败');
+            Request.get('/admin/role/list').then(res => {
+                // 更新数据
+                window.roleSelect.update({
+                    data: res
+                });
+                // 如果是编辑模式且有选中值
+                if (selected && selected.length > 0) {
+                    window.roleSelect.setValue(selected);
                 }
             });
         }
@@ -297,14 +310,9 @@
                     initUpload('#uploadAvatar');
 
                     // 获取用户角色并设置选中
-                    $.get('/admin/user/roles', { id: data.id }, function(res) {
-                        if (res.code === 0) {
-                            console.log('用户角色数据:', res.data); // 调试用
-                            initRoleSelect(res.data);
-                        } else {
-                            layer.msg('获取用户角色失败');
-                            initRoleSelect(); // 仍然初始化选择器，但不设置选中值
-                        }
+                    Request.get('/admin/user/roles', { id: data.id }).then(res => {
+                        console.log('用户角色数据:', res); // 调试用
+                        initRoleSelect(res);
                     });
                 }
             });

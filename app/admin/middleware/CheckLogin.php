@@ -11,7 +11,8 @@ class CheckLogin
     protected $excludeMethods = [
         'login/index',
         'login/check',
-        'login/captcha'
+        'login/captcha',
+        'config/getConfigByTab'
     ];
 
     public function handle($request, \Closure $next)
@@ -32,6 +33,12 @@ class CheckLogin
             if ($request->isAjax()) {
                 return json(['code' => -1, 'msg' => '请先登录']);
             }
+            
+            // 检查是否在iframe中
+            if ($request->header('sec-fetch-dest') === 'iframe') {
+                return response('<script>top.location.href="' . (string)url('/admin/login') . '";</script>');
+            }
+            
             // 普通请求跳转到登录页
             return redirect((string)url('/admin/login'));
         }

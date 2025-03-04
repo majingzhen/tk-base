@@ -25,6 +25,7 @@
                             <option value="base">基础配置</option>
                             <option value="upload">上传配置</option>
                             <option value="system">系统配置</option>
+                            <option value="user">用户配置</option>
                         </select>
                     </div>
                 </div>
@@ -93,6 +94,7 @@
                     <option value="base">基础配置</option>
                     <option value="upload">上传配置</option>
                     <option value="system">系统配置</option>
+                    <option value="user">用户配置</option>
                 </select>
             </div>
         </div>
@@ -131,13 +133,20 @@
 </script>
 
 <script src="__STATIC__/module/layui/layui.js"></script>
-<script src="__STATIC__/admin/js/request.js"></script>
 <script>
-layui.use(['table', 'form', 'layer'], function(){
+    layui.config({
+        base: '__STATIC__/common/js/'
+    }).extend({
+        request: 'request'
+    });
+</script>
+<script>
+layui.use(['table', 'form', 'layer','request'], function(){
     var table = layui.table;
     var form = layui.form;
     var layer = layui.layer;
-    var $ = layui.$; // 添加此行，确保 $ 正常使用
+    var $ = layui.jquery; // 添加此行，确保 $ 正常使用
+    var Request = layui.request;
     
     // 初始化表格
     table.render({

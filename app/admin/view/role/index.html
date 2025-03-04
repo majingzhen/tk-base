@@ -88,16 +88,23 @@
         </div>
     </form>
 </script>
-<script src="__STATIC__/module/jquery/jquery.min.js"></script>
 <script src="__STATIC__/module/layui/layui.js"></script>
+<script>
+    layui.config({
+        base: '__STATIC__/common/js/'
+    }).extend({
+        request: 'request'
+    });
+</script>
 
 <script>
-    layui.use(['table', 'form', 'layer','tree'], function(){
+    layui.use(['table', 'form', 'layer','tree', 'request'], function(){
         var table = layui.table;
         var form = layui.form;
         var layer = layui.layer;
         var $ = layui.jquery;
         var tree = layui.tree;
+        var Request = layui.request;
 
         // 初始化表格
         table.render({
@@ -126,14 +133,10 @@
             var data = obj.data;
             if(obj.event === 'del'){
                 layer.confirm('确定删除吗？', function(index){
-                    $.post('/admin/role/delete', {id: data.id}, function(res){
-                        if(res.code === 1){
-                            obj.del();
-                            layer.msg('删除成功');
-                        }else{
-                            layer.msg(res.msg);
-                        }
-                    });
+                    Request.post('/admin/role/delete', {id: data.id}).then(res => {
+                        obj.del();
+                        layer.msg('删除成功');
+                    })
                     layer.close(index);
                 });
             } else if(obj.event === 'edit'){
@@ -142,51 +145,47 @@
         });
         // 初始化菜单库
         function getAuthMenuList(authData) {
-            $.get('/admin/menu/list', function(res){
-                if(res.code === 0) {
-                    const authMap = {};
-                    if(authData) {
-                        authData.forEach(item => {
-                            authMap[item.id] = true;
-                        });
-                    }
-                    
-                    // 递归处理树节点：如果节点有子节点，则根据所有子节点的选中状态决定父节点状态
-                    const processNodes = (items) => {
-                        return items.map(item => {
-                            const node = { ...item };
-                            if(node.children && node.children.length > 0) {
-                                node.children = processNodes(node.children);
-                                // 当所有子节点都选中时，父节点才显示为选中
-                                node.checked = node.children.every(child => child.checked);
-                            } else {
-                                // 叶子节点：根据权限直接设置 checked
-                                if(authMap[node.id]){
-                                    node.checked = true;
-                                }
-                            }
-                            return node;
-                        });
-                    };
-                    
-                    const treeData = processNodes(res.data);
-                    
-                    tree.render({
-                        elem: '#authMenuTree',
-                        data: treeData,
-                        showCheckbox: true,
-                        onlyIconControl: true,
-                        id: 'authMenu',
-                        isJump: false,
-                        customName: {
-                            id: 'id',
-                            title: 'name'
-                        }
+            Request.get('/admin/menu/list').then(res => {
+                const authMap = {};
+                if(authData) {
+                    authData.forEach(item => {
+                        authMap[item.id] = true;
                     });
-                } else {
-                    layer.msg(res.msg);
                 }
-            });
+
+                // 递归处理树节点：如果节点有子节点，则根据所有子节点的选中状态决定父节点状态
+                const processNodes = (items) => {
+                    return items.map(item => {
+                        const node = { ...item };
+                        if(node.children && node.children.length > 0) {
+                            node.children = processNodes(node.children);
+                            // 当所有子节点都选中时，父节点才显示为选中
+                            node.checked = node.children.every(child => child.checked);
+                        } else {
+                            // 叶子节点：根据权限直接设置 checked
+                            if(authMap[node.id]){
+                                node.checked = true;
+                            }
+                        }
+                        return node;
+                    });
+                };
+
+                const treeData = processNodes(res);
+
+                tree.render({
+                    elem: '#authMenuTree',
+                    data: treeData,
+                    showCheckbox: true,
+                    onlyIconControl: true,
+                    id: 'authMenu',
+                    isJump: false,
+                    customName: {
+                        id: 'id',
+                        title: 'name'
+                    }
+                });
+            })
         }
         // 监听搜索提交
         form.on('submit(searchSubmit)', function(data){
@@ -214,15 +213,11 @@
             };
             collectIds(checkedData);
             data.field.menuIds = menuIds;
-            $.post('/admin/role/save', data.field, function(res){
+            Request.post('/admin/role/save', data.field).then(() => {
                 layer.close(loading);
-                if(res.code === 0){
-                    layer.closeAll('page');
-                    table.reload('roleTable');
-                    layer.msg('保存成功');
-                }else{
-                    layer.msg(res.msg);
-                }
+                layer.closeAll('page');
+                table.reload('roleTable');
+                layer.msg('保存成功');
             });
             return false;
         });

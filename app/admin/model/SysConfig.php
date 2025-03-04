@@ -17,17 +17,19 @@ class SysConfig extends Model
         'sort'      => 'integer',
         'options'   => 'array',
     ];
-    
-    // 获取配置值
-    public static function getConfig($key, $default = null)
+
+    public static function getConfigByKey($value)
     {
-        $value = self::where('key', $key)->value('value');
-        return $value !== null ? $value : $default;
+        return self::where('key', $value)->value('value');
     }
-    
-    // 设置配置值
-    public static function setConfig($key, $value)
+
+    public static function setConfigByKey($key, $value)
     {
-        return self::where('key', $key)->update(['value' => $value]);
+        $config = self::where('key', $key)->find();
+        if($config) {
+            $config->value = $value;
+            return $config->save();
+        }
+        return false;
     }
 }

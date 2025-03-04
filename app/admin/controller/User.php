@@ -73,7 +73,6 @@ class User extends BaseController
                 if ($exists) {
                     return JsonResponse::error('用户名已存在');
                 }
-
                 
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
                 $user = SysUser::create($data);
@@ -105,6 +104,16 @@ class User extends BaseController
             return JsonResponse::success();
         } catch (\Exception $e) {
             return JsonResponse::error('删除失败：' . $e->getMessage());
+        }
+    }
+
+    public function unlock() {
+        $id = input("id");
+        try {
+            SysUser::where('id', $id)->update(['fail_num' => 0, 'status' => 1]);
+            return JsonResponse::success();
+        } catch (\Exception $e) {
+            return JsonResponse::error('解锁失败：' . $e->getMessage());
         }
     }
 

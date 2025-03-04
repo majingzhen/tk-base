@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>后台管理系统 - 登录</title>
+    <title id="pageTitle">登录</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="__STATIC__/module/layui/css/layui.css">
     <style>
@@ -35,7 +35,7 @@
 <body>
     <div class="login-wrap">
         <div class="login-container">
-            <h2 class="login-title">后台管理系统</h2>
+            <h2 class="login-title" id="systemName">后台管理系统</h2>
             <form class="layui-form" action="">
                 <div class="layui-form-item">
                     <div class="layui-input-block" style="margin-left: 0;">
@@ -70,18 +70,59 @@
             </form>
         </div>
     </div>
-
     <script src="__STATIC__/module/layui/layui.js"></script>
-    <script src="__STATIC__/admin/js/request.js"></script>
     <script>
-    layui.use(['form', 'layer'], function(){
+        layui.config({
+            base: '__STATIC__/common/js/'
+        }).extend({
+            request: 'request'
+        })
+    </script>
+    <script>
+    layui.use(['form', 'layer','request'], function(){
         var form = layui.form;
         var layer = layui.layer;
+        var Request = layui.request;
         
         // 验证码点击刷新
         document.getElementById('captcha').onclick = function() {
             this.src = '{:captcha_src()}?t=' + Math.random();
         };
+
+        //获取系统基础配置并缓存
+        Request.get('/admin/config/getConfigByTab?tab=base')
+            .then(data => {
+                // 将数组转换为对象格式
+                let config = {};
+                data.forEach(item => {
+                    config[item.key] = item.value;
+                });
+                
+                // 存储系统配置到localStorage
+                localStorage.setItem('sysConfig', JSON.stringify(config));
+                
+                // 更新页面标题和系统名称
+                if(config.sys_title) {
+                    document.getElementById('pageTitle').innerHTML = config.sys_title + ' - 登录';
+                }
+                if(config.sys_name) {
+                    document.getElementById('systemName').innerHTML = config.sys_name;
+                }
+                
+                // 设置页面meta信息
+                if(config.sys_keywords) {
+                    let meta = document.createElement('meta');
+                    meta.name = 'keywords';
+                    meta.content = config.sys_keywords;
+                    document.head.appendChild(meta);
+                }
+                if(config.sys_desc) {
+                    let meta = document.createElement('meta');
+                    meta.name = 'description';
+                    meta.content = config.sys_desc;
+                    document.head.appendChild(meta);
+                }
+            });
         
         // 监听提交
         form.on('submit(loginForm)', function(data){
